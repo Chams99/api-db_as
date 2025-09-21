@@ -140,10 +140,10 @@ app.use((err, req, res, next) => {
  * Starts the HTTP server and logs startup information.
  * Gracefully handles shutdown signals for clean server termination.
  */
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
-  console.log(`💬 Chat API available at: http://localhost:${PORT}/api/chat`);
+  console.log(`📊 Health check available at: http://0.0.0.0:${PORT}/health`);
+  console.log(`💬 Chat API available at: http://0.0.0.0:${PORT}/api/chat`);
   console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🕐 Started at: ${new Date().toISOString()}`);
 });
