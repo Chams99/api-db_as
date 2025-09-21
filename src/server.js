@@ -31,6 +31,9 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Set production environment
+process.env.NODE_ENV = 'production';
+
 /**
  * Security Middleware Configuration
  *
@@ -51,9 +54,7 @@ app.use(helmet({
 
 // CORS configuration for web clients
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.ALLOWED_ORIGINS?.split(',')
-    : true, // Allow all origins in development
+  origin: true, // Allow all origins in production
   credentials: true,
 }));
 
