@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilio OTP Verification Example</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📞</text></svg>">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="tel"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="tel"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .step {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📞 Twilio OTP Verification</h1>
+        
+        <div class="info">
+            <strong>How it works:</strong>
+            <ol>
+                <li>Enter your phone number in international format (e.g., +1234567890)</li>
+                <li>Click "Send OTP" to receive an SMS or voice call with your verification code</li>
+                <li>Enter the 4-digit code you received</li>
+                <li>Click "Verify OTP" to complete verification</li>
+            </ol>
+            <p><strong>Note:</strong> For international numbers, you may need to enable geo-permissions in your Twilio console.</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Send OTP</h3>
+            <div class="form-group">
+                <label for="phone">Phone Number (International Format):</label>
+                <input type="tel" id="phone" placeholder="+1234567890" required>
+            </div>
+            <button id="sendBtn" onclick="sendOTP()">📞 Send OTP</button>
+            <div id="sendResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Verify OTP</h3>
+            <div class="form-group">
+                <label for="otp">Enter 4-digit OTP:</label>
+                <input type="text" id="otp" placeholder="1234" maxlength="4" pattern="[0-9]{4}">
+            </div>
+            <button id="verifyBtn" onclick="verifyOTP()" disabled>✅ Verify OTP</button>
+            <div id="verifyResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>API Endpoints</h3>
+            <p><strong>Send OTP:</strong> POST /api/twilio/send-otp</p>
+            <p><strong>Verify OTP:</strong> POST /api/twilio/verify-otp</p>
+            <p><strong>Stats:</strong> GET /api/twilio/stats</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let currentPhone = '';
+
+        async function sendOTP() {
+            const phone = document.getElementById('phone').value.trim();
+            const sendBtn = document.getElementById('sendBtn');
+            const sendResult = document.getElementById('sendResult');
+            const verifyBtn = document.getElementById('verifyBtn');
+
+            if (!phone) {
+                sendResult.innerHTML = '<div class="error">Please enter a phone number</div>';
+                return;
+            }
+
+            // Basic phone validation
+            if (!phone.startsWith('+') || phone.length < 10) {
+                sendResult.innerHTML = '<div class="error">Please enter a valid international phone number (e.g., +1234567890)</div>';
+                return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            sendResult.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/twilio/send-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    sendResult.innerHTML = `<div class="success">✅ ${data.message}</div>`;
+                    currentPhone = phone;
+                    verifyBtn.disabled = false;
+                } else {
+                    sendResult.innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                sendResult.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = '📞 Send OTP';
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = document.getElementById('otp').value.trim();
+            const verifyBtn = document.getElementById('verifyBtn');
+            const verifyResult = document.getElementById('verifyResult');
+
+            if (!otp || otp.length !== 4) {
+                verifyResult.innerHTML = '<div class="error">Please enter a 4-digit OTP</div>';
+                return;
+            }
+
+            if (!currentPhone) {
+                verifyResult.innerHTML = '<div class="error">Please send an OTP first</div>';
+                return;
+            }
+
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+            verifyResult.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/twilio/verify-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        phone: currentPhone, 
+                        otp: otp 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    verifyResult.innerHTML = `<div class="success">🎉 ${data.message}</div>`;
+                    // Reset form
+                    document.getElementById('phone').value = '';
+                    document.getElementById('otp').value = '';
+                    currentPhone = '';
+                    verifyBtn.disabled = true;
+                } else {
+                    verifyResult.innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                verifyResult.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = '✅ Verify OTP';
+            }
+        }
+
+        // Allow only numbers in OTP field
+        document.getElementById('otp').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+
+        // Enable verify button when OTP is entered
+        document.getElementById('otp').addEventListener('input', function(e) {
+            const verifyBtn = document.getElementById('verifyBtn');
+            if (e.target.value.length === 4 && currentPhone) {
+                verifyBtn.disabled = false;
+            } else {
+                verifyBtn.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

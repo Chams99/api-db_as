@@ -79,6 +79,64 @@ export const sanitizeInput = (input) => {
 };
 
 /**
+ * Validate Phone Number
+ *
+ * Validates phone number format for international use.
+ * Ensures phone number is in proper international format.
+ *
+ * @param {string} phone - Phone number to validate
+ * @returns {boolean} True if valid, false otherwise
+ */
+export const validatePhoneNumber = (phone) => {
+  if (!phone || typeof phone !== 'string') {
+    return false;
+  }
+
+  // International format: + followed by 7-15 digits
+  const phoneRegex = /^\+[1-9]\d{6,14}$/;
+  return phoneRegex.test(phone);
+};
+
+/**
+ * Validate Twilio Phone Number
+ * 
+ * Validates that the Twilio phone number is properly formatted
+ * and can be used for sending messages/calls.
+ * 
+ * @param {string} phone - Phone number to validate
+ * @returns {Object} Validation result with success status and message
+ */
+export const validateTwilioPhoneNumber = (phone) => {
+  if (!phone || typeof phone !== 'string') {
+    return {
+      success: false,
+      message: 'Twilio phone number is required'
+    };
+  }
+
+  // Check if it's in E.164 format
+  if (!phone.startsWith('+')) {
+    return {
+      success: false,
+      message: 'Twilio phone number must be in E.164 format (e.g., +15551234567)'
+    };
+  }
+
+  // Check length (US numbers are typically +1XXXXXXXXXX)
+  if (phone.length < 10 || phone.length > 16) {
+    return {
+      success: false,
+      message: 'Twilio phone number length is invalid'
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Twilio phone number format is valid'
+  };
+};
+
+/**
  * Rate Limit Headers
  *
  * Adds rate limiting information to response headers.
@@ -103,5 +161,6 @@ export const addRateLimitHeaders = (req, res, next) => {
 export default {
   validateChatMessage,
   sanitizeInput,
-  addRateLimitHeaders
+  addRateLimitHeaders,
+  validatePhoneNumber
 };

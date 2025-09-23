@@ -16,8 +16,10 @@ const __dirname = dirname(__filename);
 /**
  * Express Server Setup
  *
- * This server provides a RESTful API for an AI-powered database chat interface.
- * It integrates with Supabase for database operations and Gemini AI for natural language processing.
+ * This server provides a RESTful API for an AI-powered database chat interface
+ * with integrated Twilio functionality for OTP verification via voice calls.
+ * It integrates with Supabase for database operations, Gemini AI for natural language processing,
+ * and Twilio for secure phone verification.
  *
  * Features:
  * - Secure API endpoints with proper middleware
@@ -25,6 +27,8 @@ const __dirname = dirname(__filename);
  * - CORS support for web clients
  * - Comprehensive error handling
  * - Clean architecture with separated concerns
+ * - Twilio integration for OTP delivery via voice calls
+ * - Phone number validation and OTP verification
  */
 
 // Create Express application
@@ -102,7 +106,10 @@ app.get('/health', (req, res) => {
 
 // Import and mount API routes
 import chatRoutes from './routes/chatRoutes.js';
+import twilioRoutes from './routes/twilioRoutes.js';
+
 app.use('/api/chat', chatRoutes);
+app.use('/api/twilio', twilioRoutes);
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
@@ -111,7 +118,12 @@ app.use('*', (req, res) => {
     message: `The requested path ${req.originalUrl} does not exist on this server`,
     availableRoutes: {
       health: 'GET /health',
-      chat: 'POST /api/chat'
+      chat: 'POST /api/chat',
+      twilio: {
+        sendOTP: 'POST /api/twilio/send-otp',
+        verifyOTP: 'POST /api/twilio/verify-otp',
+        stats: 'GET /api/twilio/stats'
+      }
     }
   });
 });
@@ -145,6 +157,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check available at: http://0.0.0.0:${PORT}/health`);
   console.log(`💬 Chat API available at: http://0.0.0.0:${PORT}/api/chat`);
+  console.log(`📞 Twilio API available at: http://0.0.0.0:${PORT}/api/twilio`);
   console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🕐 Started at: ${new Date().toISOString()}`);
 });
