@@ -43,7 +43,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
     },
   },
@@ -80,6 +81,11 @@ app.use(express.static(join(__dirname, '..')));
 // Serve the main chat interface at the root path
 app.get('/', (req, res) => {
   res.sendFile(join(__dirname, '..', 'chat-interface.html'));
+});
+
+// Serve favicon to prevent 404 errors
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content response for favicon
 });
 
 /**
