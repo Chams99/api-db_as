@@ -84,7 +84,7 @@ export const generateResponse = async (userMessage, conversationHistory = [], da
   try {
     // Initialize model with system prompt
     const model = genAI.getGenerativeModel({
-      model: 'gemini-pro',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.3, // Lower temperature for more consistent, factual responses
         topK: 40,
@@ -170,17 +170,33 @@ export const generateResponse = async (userMessage, conversationHistory = [], da
 
   } catch (error) {
     console.error('Gemini AI service error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      stack: error.stack
+    });
 
     // Provide fallback response for common errors
-    if (error.message?.includes('API_KEY')) {
+    if (error.message?.includes('API_KEY') || error.message?.includes('Invalid API key')) {
       throw new Error('Gemini API key is invalid or expired');
     }
 
-    if (error.message?.includes('quota')) {
+    if (error.message?.includes('quota') || error.message?.includes('QUOTA_EXCEEDED')) {
       throw new Error('Gemini API quota exceeded. Please try again later.');
     }
 
-    throw new Error('AI service temporarily unavailable. Please try again.');
+    if (error.message?.includes('404') || error.message?.includes('not found')) {
+      throw new Error(`Gemini model not found: ${error.message}`);
+    }
+
+    if (error.message?.includes('403') || error.message?.includes('PERMISSION_DENIED')) {
+      throw new Error('Gemini API access denied. Check your API key permissions.');
+    }
+
+    // Log the actual error for debugging
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    throw new Error(`AI service error: ${error.message}`);
   }
 };
 
