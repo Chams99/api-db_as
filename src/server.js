@@ -16,10 +16,8 @@ const __dirname = dirname(__filename);
 /**
  * Express Server Setup
  *
- * This server provides a RESTful API for an AI-powered database chat interface
- * with integrated Twilio functionality for OTP verification via voice calls.
- * It integrates with Supabase for database operations, Gemini AI for natural language processing,
- * and Twilio for secure phone verification.
+ * This server provides a RESTful API for an AI-powered database chat interface.
+ * It integrates with Supabase for database operations and Gemini AI for natural language processing.
  *
  * Features:
  * - Secure API endpoints with proper middleware
@@ -27,16 +25,11 @@ const __dirname = dirname(__filename);
  * - CORS support for web clients
  * - Comprehensive error handling
  * - Clean architecture with separated concerns
- * - Twilio integration for OTP delivery via voice calls
- * - Phone number validation and OTP verification
  */
 
 // Create Express application
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Set production environment
-process.env.NODE_ENV = 'production';
 
 /**
  * Security Middleware Configuration
@@ -58,7 +51,9 @@ app.use(helmet({
 
 // CORS configuration for web clients
 app.use(cors({
-  origin: true, // Allow all origins in production
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.ALLOWED_ORIGINS?.split(',')
+    : true, // Allow all origins in development
   credentials: true,
 }));
 
@@ -78,6 +73,14 @@ app.use(limiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files from the root directory
+app.use(express.static(join(__dirname, '..')));
+
+// Serve the main chat interface at the root path
+app.get('/', (req, res) => {
+  res.sendFile(join(__dirname, '..', 'chat-interface.html'));
+});
 
 /**
  * Health Check Endpoint
@@ -117,6 +120,7 @@ app.use('*', (req, res) => {
     error: 'Route not found',
     message: `The requested path ${req.originalUrl} does not exist on this server`,
     availableRoutes: {
+      home: 'GET /',
       health: 'GET /health',
       chat: 'POST /api/chat',
       twilio: {
@@ -153,11 +157,10 @@ app.use((err, req, res, next) => {
  * Starts the HTTP server and logs startup information.
  * Gracefully handles shutdown signals for clean server termination.
  */
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check available at: http://0.0.0.0:${PORT}/health`);
-  console.log(`💬 Chat API available at: http://0.0.0.0:${PORT}/api/chat`);
-  console.log(`📞 Twilio API available at: http://0.0.0.0:${PORT}/api/twilio`);
+  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
+  console.log(`💬 Chat API available at: http://localhost:${PORT}/api/chat`);
   console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🕐 Started at: ${new Date().toISOString()}`);
 });
