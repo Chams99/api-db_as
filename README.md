@@ -12,10 +12,24 @@ A modern Node.js API that provides an AI-powered chat interface for querying a p
 - **Comprehensive Logging**: Detailed request and error logging
 - **Health Monitoring**: Built-in health checks and system statistics
 
-## 🏗️ Architecture
+## 📁 Project Structure
 
 ```
-src/
+api_ai_database_access/
+├── backend/         # Node.js server and API
+│   ├── src/         # Source code
+│   ├── package.json
+│   └── .env
+├── frontend/        # Web interfaces
+│   ├── chat-interface.html
+│   └── other HTML files
+└── README.md
+```
+
+## 🏗️ Backend Architecture
+
+```
+backend/src/
 ├── config/          # Database and service configurations
 ├── controllers/     # Request handlers and business logic
 ├── middleware/      # Custom middleware functions
@@ -40,13 +54,14 @@ src/
    cd api-ai-database-access
    ```
 
-2. **Install dependencies**
+2. **Install backend dependencies**
    ```bash
+   cd backend
    npm install
    ```
 
 3. **Environment Setup**
-   Create a `.env` file in the root directory:
+   Create a `.env` file in the `backend/` directory:
    ```env
    PORT=5000
    SUPABASE_URL=https://your-project.supabase.co
@@ -56,22 +71,26 @@ src/
 
 4. **Database Setup**
    - Create a `itemssssss` table in your Supabase database
-   - Use the provided SQL schema from `test_database.sql`
+   - Use the provided SQL schema from `backend/test_database.sql`
    - Ensure Row Level Security (RLS) is properly configured
 
 ## 🏃‍♂️ Running the Application
 
-### Development Mode
-```bash
-npm run dev
-```
+### Start the Backend Server
 
-### Production Mode
 ```bash
-npm start
+cd backend
+npm run dev    # Development mode with auto-reload
+npm start      # Production mode
 ```
 
 The server will start on `http://localhost:5000`
+
+### Open the Frontend
+
+1. Navigate to the `frontend/` directory
+2. Open `chat-interface.html` in your web browser
+3. Start chatting with your database!
 
 ## 📡 API Endpoints
 

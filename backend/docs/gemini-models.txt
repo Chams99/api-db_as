@@ -1,0 +1,284 @@
+✅ Available Models:
+
+1. models/embedding-gecko-001
+   Display Name: Embedding Gecko
+   Description: Obtain a distributed representation of a text.
+   Supported Methods: embedText, countTextTokens
+
+2. models/gemini-2.5-flash
+   Display Name: Gemini 2.5 Flash
+   Description: Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+3. models/gemini-2.5-pro
+   Display Name: Gemini 2.5 Pro
+   Description: Stable release (June 17th, 2025) of Gemini 2.5 Pro
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+4. models/gemini-2.0-flash-exp
+   Display Name: Gemini 2.0 Flash Experimental
+   Description: Gemini 2.0 Flash Experimental
+   Supported Methods: generateContent, countTokens, bidiGenerateContent
+
+5. models/gemini-2.0-flash
+   Display Name: Gemini 2.0 Flash
+   Description: Gemini 2.0 Flash
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+6. models/gemini-2.0-flash-001
+   Display Name: Gemini 2.0 Flash 001
+   Description: Stable version of Gemini 2.0 Flash, our fast and versatile multimodal model for scaling across diverse tasks, released in January of 2025.
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+7. models/gemini-2.0-flash-exp-image-generation
+   Display Name: Gemini 2.0 Flash (Image Generation) Experimental
+   Description: Gemini 2.0 Flash (Image Generation) Experimental
+   Supported Methods: generateContent, countTokens, bidiGenerateContent
+
+8. models/gemini-2.0-flash-lite-001
+   Display Name: Gemini 2.0 Flash-Lite 001
+   Description: Stable version of Gemini 2.0 Flash-Lite
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+9. models/gemini-2.0-flash-lite
+   Display Name: Gemini 2.0 Flash-Lite
+   Description: Gemini 2.0 Flash-Lite
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+10. models/gemini-2.0-flash-lite-preview-02-05
+   Display Name: Gemini 2.0 Flash-Lite Preview 02-05
+   Description: Preview release (February 5th, 2025) of Gemini 2.0 Flash-Lite
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+11. models/gemini-2.0-flash-lite-preview
+   Display Name: Gemini 2.0 Flash-Lite Preview
+   Description: Preview release (February 5th, 2025) of Gemini 2.0 Flash-Lite
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+12. models/gemini-2.0-pro-exp
+   Display Name: Gemini 2.0 Pro Experimental
+   Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+13. models/gemini-2.0-pro-exp-02-05
+   Display Name: Gemini 2.0 Pro Experimental 02-05
+   Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+14. models/gemini-exp-1206
+   Display Name: Gemini Experimental 1206
+   Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+15. models/gemini-2.5-flash-preview-tts
+   Display Name: Gemini 2.5 Flash Preview TTS
+   Description: Gemini 2.5 Flash Preview TTS
+   Supported Methods: countTokens, generateContent
+
+16. models/gemini-2.5-pro-preview-tts
+   Display Name: Gemini 2.5 Pro Preview TTS
+   Description: Gemini 2.5 Pro Preview TTS
+   Supported Methods: countTokens, generateContent
+
+17. models/gemma-3-1b-it
+   Display Name: Gemma 3 1B
+   Supported Methods: generateContent, countTokens
+
+18. models/gemma-3-4b-it
+   Display Name: Gemma 3 4B
+   Supported Methods: generateContent, countTokens
+
+19. models/gemma-3-12b-it
+   Display Name: Gemma 3 12B
+   Supported Methods: generateContent, countTokens
+
+20. models/gemma-3-27b-it
+   Display Name: Gemma 3 27B
+   Supported Methods: generateContent, countTokens
+
+21. models/gemma-3n-e4b-it
+   Display Name: Gemma 3n E4B
+   Supported Methods: generateContent, countTokens
+
+22. models/gemma-3n-e2b-it
+   Display Name: Gemma 3n E2B
+   Supported Methods: generateContent, countTokens
+
+23. models/gemini-flash-latest
+   Display Name: Gemini Flash Latest
+   Description: Latest release of Gemini Flash
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+24. models/gemini-flash-lite-latest
+   Display Name: Gemini Flash-Lite Latest
+   Description: Latest release of Gemini Flash-Lite
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+25. models/gemini-pro-latest
+   Display Name: Gemini Pro Latest
+   Description: Latest release of Gemini Pro
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+26. models/gemini-2.5-flash-lite
+   Display Name: Gemini 2.5 Flash-Lite
+   Description: Stable version of Gemini 2.5 Flash-Lite, released in July of 2025
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+27. models/gemini-2.5-flash-image-preview
+   Display Name: Nano Banana
+   Description: Gemini 2.5 Flash Preview Image
+   Supported Methods: generateContent, countTokens, batchGenerateContent
+
+28. models/gemini-2.5-flash-image
+   Display Name: Nano Banana
+   Description: Gemini 2.5 Flash Preview Image
+   Supported Methods: generateContent, countTokens, batchGenerateContent
+
+29. models/gemini-2.5-flash-preview-09-2025
+   Display Name: Gemini 2.5 Flash Preview Sep 2025
+   Description: Gemini 2.5 Flash Preview Sep 2025
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+30. models/gemini-2.5-flash-lite-preview-09-2025
+   Display Name: Gemini 2.5 Flash-Lite Preview Sep 2025
+   Description: Preview release (Septempber 25th, 2025) of Gemini 2.5 Flash-Lite
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+31. models/gemini-3-pro-preview
+   Display Name: Gemini 3 Pro Preview
+   Description: Gemini 3 Pro Preview
+   Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+
+32. models/gemini-3-pro-image-preview
+   Display Name: Nano Banana Pro
+   Description: Gemini 3 Pro Image Preview
+   Supported Methods: generateContent, countTokens, batchGenerateContent
+
+33. models/nano-banana-pro-preview
+   Display Name: Nano Banana Pro
+   Description: Gemini 3 Pro Image Preview
+   Supported Methods: generateContent, countTokens, batchGenerateContent
+
+34. models/gemini-robotics-er-1.5-preview
+   Display Name: Gemini Robotics-ER 1.5 Preview
+   Description: Gemini Robotics-ER 1.5 Preview
+   Supported Methods: generateContent, countTokens
+
+35. models/gemini-2.5-computer-use-preview-10-2025
+   Display Name: Gemini 2.5 Computer Use Preview 10-2025
+   Description: Gemini 2.5 Computer Use Preview 10-2025
+   Supported Methods: generateContent, countTokens
+
+36. models/embedding-001
+   Display Name: Embedding 001
+   Description: Obtain a distributed representation of a text.
+   Supported Methods: embedContent
+
+37. models/text-embedding-004
+   Display Name: Text Embedding 004
+   Description: Obtain a distributed representation of a text.
+   Supported Methods: embedContent
+
+38. models/gemini-embedding-exp-03-07
+   Display Name: Gemini Embedding Experimental 03-07
+   Description: Obtain a distributed representation of a text.
+   Supported Methods: embedContent, countTextTokens, countTokens
+
+39. models/gemini-embedding-exp
+   Display Name: Gemini Embedding Experimental
+   Description: Obtain a distributed representation of a text.
+   Supported Methods: embedContent, countTextTokens, countTokens
+
+40. models/gemini-embedding-001
+   Display Name: Gemini Embedding 001
+   Description: Obtain a distributed representation of a text.
+   Supported Methods: embedContent, countTextTokens, countTokens, asyncBatchEmbedContent
+
+41. models/aqa
+   Display Name: Model that performs Attributed Question Answering.
+   Description: Model trained to return answers to questions that are grounded in provided sources, along with estimating answerable probability.
+   Supported Methods: generateAnswer
+
+42. models/imagen-4.0-generate-preview-06-06
+   Display Name: Imagen 4 (Preview)
+   Description: Vertex served Imagen 4.0 model
+   Supported Methods: predict
+
+43. models/imagen-4.0-ultra-generate-preview-06-06
+   Display Name: Imagen 4 Ultra (Preview)
+   Description: Vertex served Imagen 4.0 ultra model
+   Supported Methods: predict
+
+44. models/imagen-4.0-generate-001
+   Display Name: Imagen 4
+   Description: Vertex served Imagen 4.0 model
+   Supported Methods: predict
+
+45. models/imagen-4.0-ultra-generate-001
+   Display Name: Imagen 4 Ultra
+   Description: Vertex served Imagen 4.0 ultra model
+   Supported Methods: predict
+
+46. models/imagen-4.0-fast-generate-001
+   Display Name: Imagen 4 Fast
+   Description: Vertex served Imagen 4.0 Fast model
+   Supported Methods: predict
+
+47. models/veo-2.0-generate-001
+   Display Name: Veo 2
+   Description: Vertex served Veo 2 model. Access to this model requires billing to be enabled on the associated Google Cloud Platform account. Please visit https://console.cloud.google.com/billing to enable it.
+   Supported Methods: predictLongRunning
+
+48. models/veo-3.0-generate-001
+   Display Name: Veo 3
+   Description: Veo 3
+   Supported Methods: predictLongRunning
+
+49. models/veo-3.0-fast-generate-001
+   Display Name: Veo 3 fast
+   Description: Veo 3 fast
+   Supported Methods: predictLongRunning
+
+50. models/veo-3.1-generate-preview
+   Display Name: Veo 3.1
+   Description: Veo 3.1
+   Supported Methods: predictLongRunning
+
+
+📝 Models supporting generateContent (for chat):
+   - models/gemini-2.5-flash
+   - models/gemini-2.5-pro
+   - models/gemini-2.0-flash-exp
+   - models/gemini-2.0-flash
+   - models/gemini-2.0-flash-001
+   - models/gemini-2.0-flash-exp-image-generation
+   - models/gemini-2.0-flash-lite-001
+   - models/gemini-2.0-flash-lite
+   - models/gemini-2.0-flash-lite-preview-02-05
+   - models/gemini-2.0-flash-lite-preview
+   - models/gemini-2.0-pro-exp
+   - models/gemini-2.0-pro-exp-02-05
+   - models/gemini-exp-1206
+   - models/gemini-2.5-flash-preview-tts
+   - models/gemini-2.5-pro-preview-tts
+   - models/gemma-3-1b-it
+   - models/gemma-3-4b-it
+   - models/gemma-3-12b-it
+   - models/gemma-3-27b-it
+   - models/gemma-3n-e4b-it
+   - models/gemma-3n-e2b-it
+   - models/gemini-flash-latest
+   - models/gemini-flash-lite-latest
+   - models/gemini-pro-latest
+   - models/gemini-2.5-flash-lite
+   - models/gemini-2.5-flash-image-preview
+   - models/gemini-2.5-flash-image
+   - models/gemini-2.5-flash-preview-09-2025
+   - models/gemini-2.5-flash-lite-preview-09-2025
+   - models/gemini-3-pro-preview
+   - models/gemini-3-pro-image-preview
+   - models/nano-banana-pro-preview
+   - models/gemini-robotics-er-1.5-preview
+   - models/gemini-2.5-computer-use-preview-10-2025
+
+💡 Recommended model for your app: models/gemini-2.0-flash-exp

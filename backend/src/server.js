@@ -43,8 +43,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'"],
-      scriptSrcAttr: ["'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
     },
   },
@@ -74,19 +73,6 @@ app.use(limiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Serve static files from the root directory
-app.use(express.static(join(__dirname, '..')));
-
-// Serve the main chat interface at the root path
-app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, '..', 'chat-interface.html'));
-});
-
-// Serve favicon to prevent 404 errors
-app.get('/favicon.ico', (req, res) => {
-  res.status(204).end(); // No content response for favicon
-});
 
 /**
  * Health Check Endpoint
@@ -126,14 +112,8 @@ app.use('*', (req, res) => {
     error: 'Route not found',
     message: `The requested path ${req.originalUrl} does not exist on this server`,
     availableRoutes: {
-      home: 'GET /',
       health: 'GET /health',
-      chat: 'POST /api/chat',
-      twilio: {
-        sendOTP: 'POST /api/twilio/send-otp',
-        verifyOTP: 'POST /api/twilio/verify-otp',
-        stats: 'GET /api/twilio/stats'
-      }
+      chat: 'POST /api/chat'
     }
   });
 });

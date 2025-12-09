@@ -1,4 +1,4 @@
-import { generateResponse, parseQueryIntent } from '../services/geminiService.js';
+import { generateResponse, generateSQLQuery } from '../services/geminiService.js';
 import DatabaseService from '../services/databaseService.js';
 import { testConnection } from '../config/supabaseClient.js';
 
@@ -51,91 +51,76 @@ export class ChatController {
 
       console.log('💬 Processing message:', message);
 
-      // Parse user intent from the message
-      const queryIntent = parseQueryIntent(message);
-      console.log('🎯 Parsed intent:', queryIntent);
+      // STEP 1: Get database schema dynamically
+      // Fetch schemas for ALL discovered tables
+      const schemas = await DatabaseService.getAllTablesSchema();
+      console.log(`📋 Found ${schemas.length} tables:`, schemas.map(s => s.table).join(', '));
 
-      // Try to execute relevant database queries based on intent
-      let databaseResults = null;
-      let sqlQuery = null;
+      // STEP 2: Use AI to generate SQL query from natural language with schema context
+      const sqlQuery = await generateSQLQuery(message, schemas);
+      console.log('📝 Generated SQL:', sqlQuery);
 
-      // Check for general database queries first
-      const lowerMessage = message.toLowerCase();
-      
-      if (lowerMessage.includes('how many') || lowerMessage.includes('count') || lowerMessage.includes('total')) {
-        // Handle count queries
-        if (lowerMessage.includes('category') || lowerMessage.includes('categories')) {
-          // Get category statistics
-          databaseResults = await DatabaseService.getAllCategoryStats();
-          sqlQuery = 'SELECT category, COUNT(*) as count FROM items GROUP BY category';
+      // STEP 2: Execute the AI-generated SQL query
+      const databaseResults = await DatabaseService.executeDynamicQuery(sqlQuery);
+      console.log('📊 Query results:', {
+        success: databaseResults.success,
+        count: databaseResults.count,
+        hasData: databaseResults.data && databaseResults.data.length > 0
+      });
+
+      // STEP 3: Prepare context for AI to interpret results
+      let contextMessage = `User question: "${message}"\n\nSQL Query executed:\n${sqlQuery}\n\nQuery Results:\n`;
+
+      if (!databaseResults.success) {
+        contextMessage += `Error: ${databaseResults.error}\n\nPlease explain that there was an error executing the query and suggest the user rephrase their question.`;
+      } else if (databaseResults.data && databaseResults.data.length > 0) {
+        // Check if it's a count/aggregate query
+        if (databaseResults.data[0].total !== undefined) {
+          contextMessage += `Total count: ${databaseResults.data[0].total}\n`;
+        } else if (databaseResults.data[0].avg_price !== undefined) {
+          // Aggregate results
+          contextMessage += `Aggregate results (${databaseResults.count} rows):\n`;
+          const sampleSize = Math.min(10, databaseResults.data.length);
+          for (let i = 0; i < sampleSize; i++) {
+            const row = databaseResults.data[i];
+            contextMessage += `- ${JSON.stringify(row)}\n`;
+          }
         } else {
-          // Get total count
-          databaseResults = await DatabaseService.getItemsCount();
-          sqlQuery = 'SELECT COUNT(*) as total FROM items';
+          // Regular query results
+          contextMessage += `Found ${databaseResults.count} items:\n`;
+          const sampleSize = Math.min(5, databaseResults.data.length);
+          for (let i = 0; i < sampleSize; i++) {
+            const item = databaseResults.data[i];
+            contextMessage += `- ${item.name || 'Item'} (${item.category || 'N/A'}) - $${item.price || 'N/A'}, Rating: ${item.rating || 'N/A'}\n`;
+          }
+          if (databaseResults.count > sampleSize) {
+            contextMessage += `... and ${databaseResults.count - sampleSize} more items.\n`;
+          }
         }
-      } else if (lowerMessage.includes('show me all categories') || lowerMessage.includes('what categories') || lowerMessage.includes('list categories')) {
-        // Handle category listing
-        databaseResults = await DatabaseService.getAllCategoryStats();
-        sqlQuery = 'SELECT category, COUNT(*) as count FROM items GROUP BY category';
-      } else if (lowerMessage.includes('show me') && (lowerMessage.includes('under') || lowerMessage.includes('below'))) {
-        // Handle price range queries
-        const priceMatch = message.match(/\$?(\d+(?:\.\d{2})?)/);
-        if (priceMatch) {
-          const maxPrice = parseFloat(priceMatch[1]);
-          databaseResults = await DatabaseService.getItemsByPriceRange(0, maxPrice, { limit: 20 });
-          sqlQuery = `SELECT * FROM items WHERE price <= ${maxPrice} LIMIT 20`;
-        }
-      } else if (lowerMessage.includes('highly rated') || lowerMessage.includes('best rated') || lowerMessage.includes('top rated')) {
-        // Handle rating queries
-        databaseResults = await DatabaseService.getItemsByRating(4.0, { limit: 20 });
-        sqlQuery = 'SELECT * FROM items WHERE rating >= 4.0 LIMIT 20';
-      } else if (queryIntent.category) {
-        // Handle category-based queries
-        databaseResults = await DatabaseService.getItemsByCategory(
-          queryIntent.category,
-          { limit: queryIntent.limit }
-        );
-        sqlQuery = `SELECT * FROM items WHERE category = '${queryIntent.category}' LIMIT ${queryIntent.limit}`;
-      } else if (queryIntent.priceMin !== null || queryIntent.priceMax !== null) {
-        // Handle price-based queries
-        const minPrice = queryIntent.priceMin || 0;
-        const maxPrice = queryIntent.priceMax || 999999;
-
-        databaseResults = await DatabaseService.getItemsByPriceRange(
-          minPrice,
-          maxPrice,
-          { limit: queryIntent.limit }
-        );
-        sqlQuery = `SELECT * FROM items WHERE price BETWEEN ${minPrice} AND ${maxPrice} LIMIT ${queryIntent.limit}`;
-      } else if (queryIntent.ratingMin !== null) {
-        // Handle rating-based queries
-        databaseResults = await DatabaseService.getItemsByRating(
-          queryIntent.ratingMin,
-          { limit: queryIntent.limit }
-        );
-        sqlQuery = `SELECT * FROM items WHERE rating >= ${queryIntent.ratingMin} LIMIT ${queryIntent.limit}`;
+      } else {
+        contextMessage += `No items found matching the criteria.\n`;
       }
 
-      // Generate AI response with database context
-      const aiResponse = await generateResponse(message, conversationHistory, databaseResults);
+      contextMessage += `\nPlease provide a natural, helpful answer based on these results. Be conversational and concise.`;
 
-      // Prepare response
+      // STEP 4: Generate AI response with database context
+      const aiResponse = await generateResponse(contextMessage, conversationHistory);
+
+      // Prepare final response
       const response = {
         response: aiResponse,
         queryUsed: sqlQuery,
-        results: databaseResults ? {
-          success: databaseResults.success,
+        results: databaseResults.success ? {
+          success: true,
           count: databaseResults.count,
           data: databaseResults.data,
-          formattedMessage: DatabaseService.formatResults(
-            databaseResults,
-            lowerMessage.includes('how many') || lowerMessage.includes('count') || lowerMessage.includes('total') ? 'count' :
-            queryIntent.category ? 'category' :
-            queryIntent.priceMin !== null ? 'price_range' :
-            queryIntent.ratingMin !== null ? 'rating' : 'query'
-          )
-        } : null,
-        intent: queryIntent,
+          formattedMessage: databaseResults.count > 0
+            ? `Found ${databaseResults.count} result(s)`
+            : 'No results found'
+        } : {
+          success: false,
+          error: databaseResults.error
+        },
         timestamp: new Date().toISOString()
       };
 

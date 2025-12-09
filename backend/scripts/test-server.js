@@ -15,18 +15,18 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = 3001;
 
-// Serve static files
-app.use(express.static(__dirname));
+// Serve static files from frontend examples
+app.use(express.static(join(__dirname, '../../frontend/examples')));
 
 // Serve the Twilio example page
 app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'twilio-example.html'));
+  res.sendFile(join(__dirname, '../../frontend/examples/twilio-example.html'));
 });
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     message: 'Test server running',
     twilioExample: `http://localhost:${PORT}/twilio-example.html`
   });

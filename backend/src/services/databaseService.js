@@ -13,9 +13,158 @@ import { isSafeQuery } from './geminiService.js';
  * - Error handling and transformation
  * - Query building helpers
  * - Response formatting
+ * - Dynamic schema introspection
  */
 
 export class DatabaseService {
+  /**
+   * Get All Tables Schema
+   *
+   * Retrieves schema information for ALL discovered tables.
+   *
+   * @returns {Promise<Array>} Array of table schema objects
+   */
+  static async getAllTablesSchema() {
+    try {
+      // 1. Get list of all tables
+      const { tables } = await this.getTableSchema(null);
+
+      if (!tables || tables.length === 0) {
+        return [];
+      }
+
+      // 2. Fetch schema for each table
+      const schemas = [];
+      for (const table of tables) {
+        const schema = await this.getTableSchema(table);
+        if (schema) {
+          schemas.push(schema);
+        }
+      }
+
+      return schemas;
+    } catch (error) {
+      console.error('Error getting all tables schema:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get Database Schema
+   *
+   * Dynamically retrieves the database schema from Supabase.
+   * This allows the AI to work with any database structure.
+   *
+   * @param {string} tableName - Optional table name to get schema for
+   * @returns {Promise<Object>} Database schema information
+   */
+  static async getTableSchema(tableName = null) {
+    try {
+      // Get all tables if no specific table requested
+      if (!tableName) {
+        // Query PostgreSQL information_schema to get all tables
+        const { data, error } = await supabase
+          .from('information_schema.tables')
+          .select('table_name')
+          .eq('table_schema', 'public')
+          .eq('table_type', 'BASE TABLE');
+
+        if (error) {
+          // Fallback: try to get tables by querying known table
+          console.log('Using fallback method to detect tables');
+          return {
+            tables: ['items'], // Default fallback
+            primaryTable: 'items'
+          };
+        }
+
+        const tables = data?.map(t => t.table_name) || ['items'];
+        return {
+          tables: tables,
+          primaryTable: tables[0] || 'items'
+        };
+      }
+
+      // Get columns for specific table
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .limit(1);
+
+      if (error) {
+        console.error('Error getting table schema:', error);
+        return null;
+      }
+
+      // Extract column information from the first row
+      const columns = {};
+      if (data && data.length > 0) {
+        const sampleRow = data[0];
+        Object.keys(sampleRow).forEach(key => {
+          const value = sampleRow[key];
+          let type = 'text';
+
+          if (typeof value === 'number') {
+            type = Number.isInteger(value) ? 'integer' : 'decimal';
+          } else if (typeof value === 'boolean') {
+            type = 'boolean';
+          } else if (value instanceof Date) {
+            type = 'date';
+          }
+
+          columns[key] = type;
+        });
+      }
+
+      // Get sample data for AI context
+      const { data: sampleData } = await supabase
+        .from(tableName)
+        .select('*')
+        .limit(3);
+
+      return {
+        table: tableName,
+        columns: columns,
+        sampleData: sampleData || [],
+        columnCount: Object.keys(columns).length
+      };
+
+    } catch (error) {
+      console.error('Error in getTableSchema:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get Schema Description for AI
+   *
+   * Formats schema information in a way that's easy for AI to understand.
+   *
+   * @param {string} tableName - Table name
+   * @returns {Promise<string>} Formatted schema description
+   */
+  static async getSchemaDescription(tableName = 'items') {
+    const schema = await this.getTableSchema(tableName);
+
+    if (!schema) {
+      return `Table: ${tableName}\nColumns: Unable to retrieve schema`;
+    }
+
+    let description = `Table: ${schema.table}\nColumns:\n`;
+
+    Object.entries(schema.columns).forEach(([col, type]) => {
+      description += `- ${col} (${type})\n`;
+    });
+
+    if (schema.sampleData && schema.sampleData.length > 0) {
+      description += `\nSample data (${schema.sampleData.length} rows):\n`;
+      schema.sampleData.forEach((row, i) => {
+        description += `${i + 1}. ${JSON.stringify(row)}\n`;
+      });
+    }
+
+    return description;
+  }
   /**
    * Execute Query
    *
@@ -44,8 +193,8 @@ export class DatabaseService {
 
       if (upperQuery.includes('SELECT') && upperQuery.includes('FROM ITEMS')) {
         // Handle SELECT queries on items table
-        if (upperQuery.includes('COUNT(*)') && !upperQuery.includes('GROUP BY')) {
-          // Handle simple COUNT queries (without GROUP BY)
+        if (upperQuery.includes('COUNT(*)')) {
+          // Handle COUNT queries
           let countQuery = supabase.from('items').select('*', { count: 'exact', head: true });
 
           // Apply WHERE conditions based on the query
@@ -71,31 +220,6 @@ export class DatabaseService {
           result = {
             data: [{ total: count }],
             count: 1
-          };
-        } else if (upperQuery.includes('GROUP BY') && upperQuery.includes('CATEGORY')) {
-          // Handle category grouping queries
-          const { data, error } = await supabase
-            .from('items')
-            .select('category')
-            .not('category', 'is', null);
-          
-          if (error) throw error;
-          
-          // Group by category and count
-          const categoryCounts = {};
-          data.forEach(item => {
-            const category = item.category;
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-          });
-          
-          // Convert to array format
-          const groupedData = Object.entries(categoryCounts)
-            .map(([category, count]) => ({ category, count }))
-            .sort((a, b) => b.count - a.count);
-          
-          result = {
-            data: groupedData,
-            count: groupedData.length
           };
         } else {
           // Handle regular SELECT queries
@@ -206,6 +330,258 @@ export class DatabaseService {
         params: params
       };
     }
+  }
+
+  /**
+   * Execute Dynamic SQL Query
+   *
+   * Executes AI-generated SQL queries with enhanced safety checks.
+   * Uses Supabase's RPC feature for direct SQL execution.
+   *
+   * @param {string} sqlQuery - AI-generated SQL query
+   * @returns {Promise<Object>} Query results and metadata
+   */
+  static async executeDynamicQuery(sqlQuery) {
+    try {
+      console.log('🔍 Executing dynamic query:', sqlQuery);
+
+      // Validate query safety
+      if (!isSafeQuery(sqlQuery)) {
+        throw new Error('Query contains unsafe operations');
+      }
+
+      // Additional safety checks
+      const upperQuery = sqlQuery.toUpperCase().trim();
+
+      // Must be a SELECT query
+      if (!upperQuery.startsWith('SELECT')) {
+        throw new Error('Only SELECT queries are allowed');
+      }
+
+      // Execute using Supabase's rpc method for raw SQL
+      // Note: This requires a PostgreSQL function to be created in Supabase
+      // For now, we'll parse and execute using Supabase's query builder
+
+      const result = await this.parseAndExecuteSQL(sqlQuery);
+
+      return {
+        success: true,
+        data: result.data || [],
+        count: result.data?.length || (result.count !== undefined ? result.count : 0),
+        query: sqlQuery
+      };
+
+    } catch (error) {
+      console.error('❌ Dynamic query execution error:', error);
+      return {
+        success: false,
+        error: error.message,
+        query: sqlQuery
+      };
+    }
+  }
+
+  /**
+   * Parse and Execute SQL
+   *
+   * Converts SQL string to Supabase query builder calls.
+   * This is a simplified parser for common SELECT queries.
+   *
+   * @param {string} sql - SQL query string
+   * @returns {Promise<Object>} Query results
+   */
+  static async parseAndExecuteSQL(sql) {
+    const cleanSQL = sql.replace(/;+$/, '').trim();
+    const upperSQL = cleanSQL.toUpperCase();
+
+    // Extract table name
+    const fromMatch = cleanSQL.match(/FROM\s+(\w+)/i);
+    if (!fromMatch) {
+      // Handle simple SELECTs without FROM (e.g., SELECT 1)
+      if (upperSQL === 'SELECT 1') {
+        return { data: [{ result: 1 }], count: 1 };
+      }
+      throw new Error('Could not parse table name from query');
+    }
+    const tableName = fromMatch[1];
+
+    // Start building query
+    let query = supabase.from(tableName);
+
+    // Handle COUNT queries
+    if (upperSQL.includes('COUNT(*)')) {
+      query = query.select('*', { count: 'exact', head: false });
+
+      // Apply WHERE clause if present
+      query = this.applyWhereClause(query, cleanSQL);
+
+      // Apply GROUP BY if present
+      if (upperSQL.includes('GROUP BY')) {
+        // For GROUP BY queries, we need to select the actual columns
+        const selectMatch = cleanSQL.match(/SELECT\s+([\s\S]*?)\s+FROM/i);
+        if (selectMatch) {
+          const columns = selectMatch[1].trim();
+          query = supabase.from(tableName).select(columns);
+          query = this.applyWhereClause(query, cleanSQL);
+          query = this.applyGroupBy(query, cleanSQL);
+        }
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      if (upperSQL.includes('GROUP BY')) {
+        return { data, count: data?.length || 0 };
+      }
+
+      return { data: [{ total: count }], count: 1 };
+    }
+
+    // Handle regular SELECT queries
+    const selectMatch = cleanSQL.match(/SELECT\s+([\s\S]*?)\s+FROM/i);
+    let selectColumns = '*';
+    let isDistinct = false;
+
+    if (selectMatch) {
+      selectColumns = selectMatch[1].trim();
+
+      // Handle DISTINCT
+      if (selectColumns.toUpperCase().startsWith('DISTINCT ')) {
+        isDistinct = true;
+        selectColumns = selectColumns.substring(9).trim(); // Remove "DISTINCT "
+      }
+
+      // Convert SQL column list to Supabase format
+      if (selectColumns !== '*' && !selectColumns.includes('(')) {
+        selectColumns = selectColumns.split(',').map(c => c.trim()).join(',');
+      }
+    }
+
+    query = supabase.from(tableName).select(selectColumns);
+
+    // Apply WHERE clause
+    query = this.applyWhereClause(query, cleanSQL);
+
+    // Apply ORDER BY
+    query = this.applyOrderBy(query, cleanSQL);
+
+    // Apply LIMIT
+    query = this.applyLimit(query, cleanSQL);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Post-process for DISTINCT if needed (since Supabase select() doesn't do DISTINCT directly easily)
+    let finalData = data || [];
+    if (isDistinct && finalData.length > 0) {
+      // Simple deduplication for retrieved columns
+      // Note: This works because we only fetch limited rows usually
+      const uniqueSet = new Set();
+      finalData = finalData.filter(item => {
+        const val = JSON.stringify(item);
+        if (uniqueSet.has(val)) return false;
+        uniqueSet.add(val);
+        return true;
+      });
+    }
+
+    return { data: finalData, count: finalData.length };
+  }
+
+  /**
+   * Apply WHERE clause to Supabase query
+   */
+  static applyWhereClause(query, sql) {
+    const whereMatch = sql.match(/WHERE\s+([\s\S]*?)(?:ORDER BY|GROUP BY|LIMIT|$)/i);
+    if (!whereMatch) return query;
+
+    const whereClause = whereMatch[1].trim();
+
+    // Parse simple conditions
+    // Handle = conditions
+    const eqMatches = [...whereClause.matchAll(/(\w+)\s*=\s*'([^']+)'/gi)];
+    for (const match of eqMatches) {
+      query = query.eq(match[1], match[2]);
+    }
+
+    // Handle numeric = conditions
+    const numEqMatches = [...whereClause.matchAll(/(\w+)\s*=\s*(\d+(?:\.\d+)?)/gi)];
+    for (const match of numEqMatches) {
+      query = query.eq(match[1], parseFloat(match[2]));
+    }
+
+    // Handle < conditions
+    const ltMatches = [...whereClause.matchAll(/(\w+)\s*<\s*(\d+(?:\.\d+)?)/gi)];
+    for (const match of ltMatches) {
+      query = query.lt(match[1], parseFloat(match[2]));
+    }
+
+    // Handle > conditions
+    const gtMatches = [...whereClause.matchAll(/(\w+)\s*>\s*(\d+(?:\.\d+)?)/gi)];
+    for (const match of gtMatches) {
+      query = query.gt(match[1], parseFloat(match[2]));
+    }
+
+    // Handle >= conditions
+    const gteMatches = [...whereClause.matchAll(/(\w+)\s*>=\s*(\d+(?:\.\d+)?)/gi)];
+    for (const match of gteMatches) {
+      query = query.gte(match[1], parseFloat(match[2]));
+    }
+
+    // Handle <= conditions
+    const lteMatches = [...whereClause.matchAll(/(\w+)\s*<=\s*(\d+(?:\.\d+)?)/gi)];
+    for (const match of lteMatches) {
+      query = query.lte(match[1], parseFloat(match[2]));
+    }
+
+    // Handle BETWEEN conditions
+    const betweenMatch = whereClause.match(/(\w+)\s+BETWEEN\s+(\d+(?:\.\d+)?)\s+AND\s+(\d+(?:\.\d+)?)/i);
+    if (betweenMatch) {
+      query = query.gte(betweenMatch[1], parseFloat(betweenMatch[2]));
+      query = query.lte(betweenMatch[1], parseFloat(betweenMatch[3]));
+    }
+
+    // Handle ILIKE conditions
+    const ilikeMatches = [...whereClause.matchAll(/(\w+)\s+ILIKE\s*'([^']+)'/gi)];
+    for (const match of ilikeMatches) {
+      query = query.ilike(match[1], match[2]);
+    }
+
+    return query;
+  }
+
+  /**
+   * Apply ORDER BY clause to Supabase query
+   */
+  static applyOrderBy(query, sql) {
+    const orderMatch = sql.match(/ORDER BY\s+([\s\S]*?)(?:LIMIT|$)/i);
+    if (!orderMatch) return query;
+
+    const orderClause = orderMatch[1].trim();
+    const parts = orderClause.split(',')[0].trim().split(/\s+/);
+    const column = parts[0];
+    const direction = parts[1]?.toUpperCase() === 'DESC' ? false : true;
+
+    return query.order(column, { ascending: direction });
+  }
+
+  /**
+   * Apply GROUP BY clause (simplified)
+   */
+  static applyGroupBy(query, sql) {
+    // Supabase doesn't directly support GROUP BY in the query builder
+    // This would need to be handled differently or use RPC
+    return query;
+  }
+
+  /**
+   * Apply LIMIT clause to Supabase query
+   */
+  static applyLimit(query, sql) {
+    const limitMatch = sql.match(/LIMIT\s+(\d+)/i);
+    if (!limitMatch) return query;
+
+    return query.limit(parseInt(limitMatch[1]));
   }
 
   /**
@@ -331,26 +707,6 @@ export class DatabaseService {
 
     const params = [category];
     return this.executeQuery(query, params);
-  }
-
-  /**
-   * Get All Category Statistics
-   *
-   * Returns statistics for all categories in the database.
-   *
-   * @returns {Promise<Object>} Category statistics
-   */
-  static async getAllCategoryStats() {
-    const query = `
-      SELECT
-        category,
-        COUNT(*) as count
-      FROM items
-      GROUP BY category
-      ORDER BY count DESC
-    `;
-
-    return this.executeQuery(query);
   }
 
   /**

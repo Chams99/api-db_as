@@ -7,11 +7,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "node src/test-server.js",
-    "test:server": "node src/test-server.js",
-    "test:twilio": "node simple-test.js",
-    "test:real": "node test-real-phone.js",
-    "test:html": "node test-server.js",
+    "test": "node scripts/test-server.js",
+    "test:server": "node scripts/test-server.js",
+    "test:twilio": "node scripts/simple-test.js",
+    "test:real": "node scripts/test-real-phone.js",
+    "test:html": "node scripts/test-server.js",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write src/**/*.js"
   },
